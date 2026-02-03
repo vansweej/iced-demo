@@ -95,7 +95,7 @@ impl Application for TreeDemo {
         Command::none()
     }
 
-    fn view(&self) -> Element<Message> {
+    fn view(&self) -> Element<'_, Message> {
         TreeWidget::new(&self.root, vec![]).into()
     }
 
@@ -129,24 +129,11 @@ where
     }
 
     fn children(&self) -> Vec<Tree> {
-        if self.node.open {
-            self.node
-                .children
-                .iter()
-                .enumerate()
-                .map(|(i, child)| {
-                    let mut path = self.path.clone();
-                    path.push(i);
-                    Tree::new(&TreeWidget::new(child, path))
-                })
-                .collect()
-        } else {
-            vec![]
-        }
+        vec![]
     }
 
-    fn diff(&self, tree: &mut Tree) {
-        tree.diff_children(&self.children().iter().collect::<Vec<_>>());
+    fn diff(&self, _tree: &mut Tree) {
+        // No-op for stateless widget
     }
 
     fn size(&self) -> iced::Size<iced::Length> {
@@ -162,19 +149,15 @@ where
         _renderer: &R,
         limits: &iced::advanced::layout::Limits,
     ) -> iced::advanced::layout::Node {
-        let indent = self.path.len() as f32 * 24.0;
+        let _indent = self.path.len() as f32 * 24.0;
         let row_height = 24.0;
 
         let mut total_height = row_height;
 
         if self.node.open {
-            for (i, child) in self.node.children.iter().enumerate() {
-                let mut child_path = self.path.clone();
-                child_path.push(i);
-                let child_widget = TreeWidget::new(child, child_path);
-                let child_node =
-                    child_widget.layout(&mut Tree::new(&child_widget), _renderer, limits);
-                total_height += child_node.size().height;
+            for child in &self.node.children {
+                // Recursively calculate height
+                total_height += calculate_height(child) * row_height;
             }
         }
 
@@ -204,13 +187,12 @@ where
             height: 24.0,
         };
 
-        if let Mouse(MouseEvent::ButtonPressed(Button::Left)) = event {
-            if let Some(pos) = cursor.position() {
-                if row_bounds.contains(pos) {
-                    shell.publish(Message::Toggle(self.path.clone()));
-                    return Status::Captured;
-                }
-            }
+        if let Mouse(MouseEvent::ButtonPressed(Button::Left)) = event
+            && let Some(pos) = cursor.position()
+            && row_bounds.contains(pos)
+        {
+            shell.publish(Message::Toggle(self.path.clone()));
+            return Status::Captured;
         }
         Status::Ignored
     }
@@ -225,8 +207,7 @@ where
         _cursor: iced::advanced::mouse::Cursor,
         _viewport: &iced::Rectangle,
     ) {
-        use iced::advanced::text::Renderer as TextRenderer;
-        use iced::{Color, Font, Pixels, alignment};
+        use iced::{Color, Pixels, alignment};
 
         let bounds = layout.bounds();
         let indent = self.path.len() as f32 * 24.0;
@@ -243,11 +224,11 @@ where
 
         renderer.fill_text(
             iced::advanced::text::Text {
-                content: text,
+                content: &text,
                 bounds: iced::Size::new(bounds.width - indent, 24.0),
                 size: Pixels(16.0),
                 line_height: iced::widget::text::LineHeight::default(),
-                font: Font::default(),
+                font: renderer.default_font(),
                 horizontal_alignment: alignment::Horizontal::Left,
                 vertical_alignment: alignment::Vertical::Top,
                 shaping: iced::advanced::text::Shaping::Basic,
@@ -273,12 +254,13 @@ where
                     height: bounds.height - y_offset,
                 };
 
-                let child_layout = iced::advanced::Layout::new(&iced::advanced::layout::Node::new(
+                let child_layout_node = iced::advanced::layout::Node::new(
                     child_bounds.size(),
-                ));
+                );
+                let child_layout = iced::advanced::Layout::new(&child_layout_node);
 
                 child_widget.draw(
-                    &Tree::new(&child_widget),
+                    _tree,
                     renderer,
                     _theme,
                     _style,
@@ -301,6 +283,14 @@ fn count_open_children(node: &Node) -> usize {
             .iter()
             .map(|c| 1 + count_open_children(c))
             .sum()
+    }
+}
+
+fn calculate_height(node: &Node) -> f32 {
+    if node.open {
+        1.0 + node.children.iter().map(calculate_height).sum::<f32>()
+    } else {
+        1.0
     }
 }
 
