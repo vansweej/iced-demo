@@ -26,8 +26,15 @@
           rustc = rustToolchain;
         };
 
-        common = {
-          version = "0.0.1";
+        libPath = with pkgs; lib.makeLibraryPath [
+          libGL
+          libxkbcommon
+          wayland
+        ];
+
+        iced-demo = rustPlatform.buildRustPackage {
+          pname = "iced-demo";
+          version = "0.1.0";
           src = ./.;
 
           cargoLock = {
@@ -35,69 +42,28 @@
           };
 
           nativeBuildInputs = [ pkgs.pkg-config ];
+          buildInputs = [ pkgs.libGL pkgs.libxkbcommon pkgs.wayland ];
+          
           PKG_CONFIG_PATH = "${pkgs.openssl.dev}/lib/pkgconfig";
         };
-
-        dot-analyse-rs = rustPlatform.buildRustPackage (
-          common
-          // {
-            pname = "dot-analyse-rs";
-            cargoBuildFlags = "-p dot-analyse-rs";
-          }
-        );
-
-        recipe-grep = rustPlatform.buildRustPackage (
-          common
-          // {
-            pname = "recipe-grep";
-            cargoBuildFlags = "-p recipe_grep";
-          }
-        );
-
-        recipe-neighbour = rustPlatform.buildRustPackage (
-          common
-          // {
-            pname = "recipe-neighbour";
-            cargoBuildFlags = "-p recipe-neighbour";
-          }
-        );
       in
       rec {
         packages = {
-          dot-analyse-rs = dot-analyse-rs;
-          recipe-grep = recipe-grep;
-          recipe-neighbour = recipe-neighbour;
-          all = pkgs.symlinkJoin {
-            name = "all";
-            paths = [
-              dot-analyse-rs
-              recipe-grep
-              recipe-neighbour
-            ];
-          };
-          default = packages.all;
+          iced-demo = iced-demo;
+          default = iced-demo;
         };
 
         devShells.default = pkgs.mkShell {
-          packages = [
+          buildInputs = with pkgs; [
             rustToolchain
-            pkgs.cargo-deny
-            pkgs.cargo-edit
-            pkgs.cargo-tarpaulin
-            pkgs.cargo-watch
-            pkgs.cargo-outdated
-            pkgs.cargo-update
-            pkgs.git
-            pkgs.openssl
-            pkgs.pkg-config
-            pkgs.rust-analyzer
+            libGL
+            libxkbcommon
+            wayland
           ];
 
-          env = {
-            # Required by rust-analyzer
-            RUST_SRC_PATH = "${rustToolchain}/lib/rustlib/src/rust/library";
-            PKG_CONFIG_PATH = "${pkgs.openssl.dev}/lib/pkgconfig";
-          };
+          RUST_LOG = "debug";
+          RUST_SRC_PATH = "${pkgs.rust.packages.stable.rustPlatform.rustLibSrc}";
+          LD_LIBRARY_PATH = libPath;
         };
       }
     );
