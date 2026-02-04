@@ -60,6 +60,7 @@
             xorg.libXrandr
             xorg.libXcursor
             xorg.libXi
+            xorg.libXinerama
             vulkan-loader
           ];
           
