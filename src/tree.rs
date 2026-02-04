@@ -16,6 +16,31 @@ impl Node {
             children,
         }
     }
+
+    /// Adds a child node to the end of the children list
+    pub fn add_child(&mut self, child: Node) {
+        self.children.push(child);
+    }
+
+    /// Removes a child at the specified index
+    /// Returns the removed node if successful, None if index is out of bounds
+    pub fn remove_child(&mut self, index: usize) -> Option<Node> {
+        if index < self.children.len() {
+            Some(self.children.remove(index))
+        } else {
+            None
+        }
+    }
+
+    /// Inserts a child at the specified index
+    /// If index is greater than the length, the child is added at the end
+    pub fn insert_child(&mut self, index: usize, child: Node) {
+        if index >= self.children.len() {
+            self.children.push(child);
+        } else {
+            self.children.insert(index, child);
+        }
+    }
 }
 
 /// Render a tree node and its children using standard widgets
@@ -114,5 +139,144 @@ mod tests {
         let root = Node::new("Root", true, vec![branch]);
         
         assert_eq!(root.children[0].children[0].label, "Leaf");
+    }
+
+    #[test]
+    fn test_add_child() {
+        let mut parent = Node::new("Parent", false, vec![]);
+        assert_eq!(parent.children.len(), 0);
+        
+        let child = Node::new("Child", false, vec![]);
+        parent.add_child(child);
+        
+        assert_eq!(parent.children.len(), 1);
+        assert_eq!(parent.children[0].label, "Child");
+    }
+
+    #[test]
+    fn test_add_multiple_children() {
+        let mut parent = Node::new("Parent", false, vec![]);
+        
+        parent.add_child(Node::new("Child 1", false, vec![]));
+        parent.add_child(Node::new("Child 2", false, vec![]));
+        parent.add_child(Node::new("Child 3", false, vec![]));
+        
+        assert_eq!(parent.children.len(), 3);
+        assert_eq!(parent.children[0].label, "Child 1");
+        assert_eq!(parent.children[1].label, "Child 2");
+        assert_eq!(parent.children[2].label, "Child 3");
+    }
+
+    #[test]
+    fn test_remove_child() {
+        let child1 = Node::new("Child 1", false, vec![]);
+        let child2 = Node::new("Child 2", false, vec![]);
+        let mut parent = Node::new("Parent", false, vec![child1, child2]);
+        
+        assert_eq!(parent.children.len(), 2);
+        
+        let removed = parent.remove_child(0);
+        assert!(removed.is_some());
+        assert_eq!(removed.unwrap().label, "Child 1");
+        assert_eq!(parent.children.len(), 1);
+        assert_eq!(parent.children[0].label, "Child 2");
+    }
+
+    #[test]
+    fn test_remove_child_invalid_index() {
+        let mut parent = Node::new("Parent", false, vec![]);
+        
+        let removed = parent.remove_child(0);
+        assert!(removed.is_none());
+        
+        parent.add_child(Node::new("Child", false, vec![]));
+        let removed = parent.remove_child(5);
+        assert!(removed.is_none());
+        assert_eq!(parent.children.len(), 1);
+    }
+
+    #[test]
+    fn test_remove_last_child() {
+        let child1 = Node::new("Child 1", false, vec![]);
+        let child2 = Node::new("Child 2", false, vec![]);
+        let mut parent = Node::new("Parent", false, vec![child1, child2]);
+        
+        let removed = parent.remove_child(1);
+        assert!(removed.is_some());
+        assert_eq!(removed.unwrap().label, "Child 2");
+        assert_eq!(parent.children.len(), 1);
+        assert_eq!(parent.children[0].label, "Child 1");
+    }
+
+    #[test]
+    fn test_insert_child_at_beginning() {
+        let child1 = Node::new("Child 1", false, vec![]);
+        let mut parent = Node::new("Parent", false, vec![child1]);
+        
+        parent.insert_child(0, Node::new("New First", false, vec![]));
+        
+        assert_eq!(parent.children.len(), 2);
+        assert_eq!(parent.children[0].label, "New First");
+        assert_eq!(parent.children[1].label, "Child 1");
+    }
+
+    #[test]
+    fn test_insert_child_at_middle() {
+        let child1 = Node::new("Child 1", false, vec![]);
+        let child2 = Node::new("Child 2", false, vec![]);
+        let mut parent = Node::new("Parent", false, vec![child1, child2]);
+        
+        parent.insert_child(1, Node::new("Middle", false, vec![]));
+        
+        assert_eq!(parent.children.len(), 3);
+        assert_eq!(parent.children[0].label, "Child 1");
+        assert_eq!(parent.children[1].label, "Middle");
+        assert_eq!(parent.children[2].label, "Child 2");
+    }
+
+    #[test]
+    fn test_insert_child_at_end() {
+        let child1 = Node::new("Child 1", false, vec![]);
+        let mut parent = Node::new("Parent", false, vec![child1]);
+        
+        parent.insert_child(1, Node::new("Last", false, vec![]));
+        
+        assert_eq!(parent.children.len(), 2);
+        assert_eq!(parent.children[0].label, "Child 1");
+        assert_eq!(parent.children[1].label, "Last");
+    }
+
+    #[test]
+    fn test_insert_child_beyond_length() {
+        let mut parent = Node::new("Parent", false, vec![]);
+        
+        parent.insert_child(10, Node::new("Child", false, vec![]));
+        
+        assert_eq!(parent.children.len(), 1);
+        assert_eq!(parent.children[0].label, "Child");
+    }
+
+    #[test]
+    fn test_add_child_to_existing_children() {
+        let child1 = Node::new("Child 1", false, vec![]);
+        let mut parent = Node::new("Parent", false, vec![child1]);
+        
+        parent.add_child(Node::new("Child 2", false, vec![]));
+        
+        assert_eq!(parent.children.len(), 2);
+        assert_eq!(parent.children[0].label, "Child 1");
+        assert_eq!(parent.children[1].label, "Child 2");
+    }
+
+    #[test]
+    fn test_remove_all_children() {
+        let child1 = Node::new("Child 1", false, vec![]);
+        let child2 = Node::new("Child 2", false, vec![]);
+        let mut parent = Node::new("Parent", false, vec![child1, child2]);
+        
+        parent.remove_child(0);
+        parent.remove_child(0);
+        
+        assert_eq!(parent.children.len(), 0);
     }
 }
