@@ -28,7 +28,6 @@
 
         libPath = with pkgs; lib.makeLibraryPath [
           libGL
-          libEGL
           libxkbcommon
           wayland
           mesa
@@ -52,7 +51,6 @@
           nativeBuildInputs = [ pkgs.pkg-config ];
           buildInputs = with pkgs; [ 
             libGL 
-            libEGL
             libxkbcommon 
             wayland 
             mesa
@@ -80,7 +78,6 @@
             pkg-config
             openssl
             libGL
-            libEGL
             libxkbcommon
             wayland
             mesa
