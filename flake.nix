@@ -56,6 +56,9 @@
         devShells.default = pkgs.mkShell {
           buildInputs = with pkgs; [
             rustToolchain
+            rust-analyzer
+            pkg-config
+            openssl
             libGL
             libxkbcommon
             wayland
@@ -63,6 +66,7 @@
 
           RUST_LOG = "debug";
           RUST_SRC_PATH = "${pkgs.rust.packages.stable.rustPlatform.rustLibSrc}";
+          PKG_CONFIG_PATH = "${pkgs.openssl.dev}/lib/pkgconfig";
           LD_LIBRARY_PATH = libPath;
         };
       }
