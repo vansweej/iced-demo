@@ -106,3 +106,188 @@ impl Default for TreeDemo {
         Self::new()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_tree_demo_new() {
+        let demo = TreeDemo::new();
+        
+        assert_eq!(demo.root.label, "Root");
+        assert_eq!(demo.root.open, true);
+        assert_eq!(demo.root.children.len(), 2);
+        assert_eq!(demo.editing_path, None);
+        assert_eq!(demo.edit_value, "");
+    }
+
+    #[test]
+    fn test_tree_demo_default() {
+        let demo = TreeDemo::default();
+        
+        assert_eq!(demo.root.label, "Root");
+        assert_eq!(demo.editing_path, None);
+    }
+
+    #[test]
+    fn test_toggle_node() {
+        let mut demo = TreeDemo::new();
+        let path = vec![0]; // First child
+        
+        // Get initial state
+        let initially_open = demo.get_node(&path).unwrap().open;
+        
+        // Toggle the node
+        demo.update(Message::Toggle(path.clone()));
+        
+        // Verify the state changed
+        let is_open_after_toggle = demo.get_node(&path).unwrap().open;
+        assert_eq!(is_open_after_toggle, !initially_open);
+    }
+
+    #[test]
+    fn test_toggle_root() {
+        let mut demo = TreeDemo::new();
+        let path = vec![]; // Root node
+        
+        assert!(demo.root.open);
+        
+        demo.update(Message::Toggle(path.clone()));
+        assert!(!demo.root.open);
+        
+        demo.update(Message::Toggle(path));
+        assert!(demo.root.open);
+    }
+
+    #[test]
+    fn test_start_edit() {
+        let mut demo = TreeDemo::new();
+        let path = vec![0];
+        
+        demo.update(Message::StartEdit(path.clone()));
+        
+        assert_eq!(demo.editing_path, Some(path));
+        assert_eq!(demo.edit_value, "Branch 1");
+    }
+
+    #[test]
+    fn test_edit_label() {
+        let mut demo = TreeDemo::new();
+        
+        demo.update(Message::EditLabel("New Value".to_string()));
+        
+        assert_eq!(demo.edit_value, "New Value");
+    }
+
+    #[test]
+    fn test_finish_edit() {
+        let mut demo = TreeDemo::new();
+        let path = vec![0];
+        
+        // Start editing
+        demo.update(Message::StartEdit(path.clone()));
+        assert_eq!(demo.edit_value, "Branch 1");
+        
+        // Change the value
+        demo.update(Message::EditLabel("Updated Branch".to_string()));
+        
+        // Finish editing
+        demo.update(Message::FinishEdit);
+        
+        // Verify the label was updated
+        assert_eq!(demo.get_node(&path).unwrap().label, "Updated Branch");
+        assert_eq!(demo.editing_path, None);
+        assert_eq!(demo.edit_value, "");
+    }
+
+    #[test]
+    fn test_finish_edit_without_start() {
+        let mut demo = TreeDemo::new();
+        
+        // Try to finish edit without starting
+        demo.update(Message::FinishEdit);
+        
+        // Should not panic and state should remain unchanged
+        assert_eq!(demo.editing_path, None);
+        assert_eq!(demo.edit_value, "");
+    }
+
+    #[test]
+    fn test_get_node_root() {
+        let demo = TreeDemo::new();
+        
+        let node = demo.get_node(&[]);
+        assert!(node.is_some());
+        assert_eq!(node.unwrap().label, "Root");
+    }
+
+    #[test]
+    fn test_get_node_first_child() {
+        let demo = TreeDemo::new();
+        
+        let node = demo.get_node(&[0]);
+        assert!(node.is_some());
+        assert_eq!(node.unwrap().label, "Branch 1");
+    }
+
+    #[test]
+    fn test_get_node_nested() {
+        let demo = TreeDemo::new();
+        
+        let node = demo.get_node(&[0, 0]);
+        assert!(node.is_some());
+        assert_eq!(node.unwrap().label, "Leaf 1.1");
+    }
+
+    #[test]
+    fn test_get_node_invalid_path() {
+        let demo = TreeDemo::new();
+        
+        // Path that doesn't exist
+        let node = demo.get_node(&[99]);
+        assert!(node.is_none());
+    }
+
+    #[test]
+    fn test_get_node_mut() {
+        let mut demo = TreeDemo::new();
+        
+        // Modify a node directly
+        if let Some(node) = demo.get_node_mut(&[0]) {
+            node.label = "Modified".to_string();
+        }
+        
+        assert_eq!(demo.get_node(&[0]).unwrap().label, "Modified");
+    }
+
+    #[test]
+    fn test_multiple_edits() {
+        let mut demo = TreeDemo::new();
+        
+        // Edit first branch
+        demo.update(Message::StartEdit(vec![0]));
+        demo.update(Message::EditLabel("Branch A".to_string()));
+        demo.update(Message::FinishEdit);
+        
+        // Edit second branch
+        demo.update(Message::StartEdit(vec![1]));
+        demo.update(Message::EditLabel("Branch B".to_string()));
+        demo.update(Message::FinishEdit);
+        
+        assert_eq!(demo.get_node(&[0]).unwrap().label, "Branch A");
+        assert_eq!(demo.get_node(&[1]).unwrap().label, "Branch B");
+    }
+
+    #[test]
+    fn test_edit_deep_node() {
+        let mut demo = TreeDemo::new();
+        let path = vec![0, 1]; // Leaf 1.2
+        
+        demo.update(Message::StartEdit(path.clone()));
+        demo.update(Message::EditLabel("Deep Leaf".to_string()));
+        demo.update(Message::FinishEdit);
+        
+        assert_eq!(demo.get_node(&path).unwrap().label, "Deep Leaf");
+    }
+}

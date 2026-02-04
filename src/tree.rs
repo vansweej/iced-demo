@@ -80,3 +80,39 @@ pub fn tree_view<'a>(
     
     col
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_node_new() {
+        let node = Node::new("Test Label", true, vec![]);
+        
+        assert_eq!(node.label, "Test Label");
+        assert!(node.open);
+        assert_eq!(node.children.len(), 0);
+    }
+
+    #[test]
+    fn test_node_new_with_children() {
+        let child1 = Node::new("Child 1", false, vec![]);
+        let child2 = Node::new("Child 2", false, vec![]);
+        let parent = Node::new("Parent", true, vec![child1, child2]);
+        
+        assert_eq!(parent.label, "Parent");
+        assert!(parent.open);
+        assert_eq!(parent.children.len(), 2);
+        assert_eq!(parent.children[0].label, "Child 1");
+        assert_eq!(parent.children[1].label, "Child 2");
+    }
+
+    #[test]
+    fn test_node_nested_structure() {
+        let leaf = Node::new("Leaf", false, vec![]);
+        let branch = Node::new("Branch", false, vec![leaf]);
+        let root = Node::new("Root", true, vec![branch]);
+        
+        assert_eq!(root.children[0].children[0].label, "Leaf");
+    }
+}
