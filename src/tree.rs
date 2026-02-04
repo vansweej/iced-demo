@@ -35,7 +35,7 @@ pub fn tree_view<'a>(
         "▶ "
     };
     
-    let is_editing = editing_path.as_ref().map_or(false, |p| p == &path);
+    let is_editing = editing_path.as_ref() == Some(&path);
     
     let node_widget = if is_editing {
         // Show text input when editing
