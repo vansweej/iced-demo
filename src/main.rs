@@ -136,14 +136,14 @@ mod tests {
         let path = vec![0]; // First child
         
         // Get initial state
-        let initial_state = demo.get_node(&path).unwrap().open;
+        let initially_open = demo.get_node(&path).unwrap().open;
         
         // Toggle the node
         demo.update(Message::Toggle(path.clone()));
         
         // Verify the state changed
-        let new_state = demo.get_node(&path).unwrap().open;
-        assert_eq!(new_state, !initial_state);
+        let is_open_after_toggle = demo.get_node(&path).unwrap().open;
+        assert_eq!(is_open_after_toggle, !initially_open);
     }
 
     #[test]
@@ -151,13 +151,13 @@ mod tests {
         let mut demo = TreeDemo::new();
         let path = vec![]; // Root node
         
-        assert_eq!(demo.root.open, true);
+        assert!(demo.root.open);
         
         demo.update(Message::Toggle(path.clone()));
-        assert_eq!(demo.root.open, false);
+        assert!(!demo.root.open);
         
         demo.update(Message::Toggle(path));
-        assert_eq!(demo.root.open, true);
+        assert!(demo.root.open);
     }
 
     #[test]

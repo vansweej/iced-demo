@@ -90,7 +90,7 @@ mod tests {
         let node = Node::new("Test Label", true, vec![]);
         
         assert_eq!(node.label, "Test Label");
-        assert_eq!(node.open, true);
+        assert!(node.open);
         assert_eq!(node.children.len(), 0);
     }
 
@@ -101,7 +101,7 @@ mod tests {
         let parent = Node::new("Parent", true, vec![child1, child2]);
         
         assert_eq!(parent.label, "Parent");
-        assert_eq!(parent.open, true);
+        assert!(parent.open);
         assert_eq!(parent.children.len(), 2);
         assert_eq!(parent.children[0].label, "Child 1");
         assert_eq!(parent.children[1].label, "Child 2");
