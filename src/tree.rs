@@ -35,12 +35,12 @@ pub fn tree_view<'a>(
         "▶ "
     };
     
-    let is_editing = editing_path.as_ref() == Some(&path);
+    let is_editing = editing_path.as_ref().map_or(false, |p| p == &path);
     
     let node_widget = if is_editing {
         // Show text input when editing
         column![
-            text_input("Edit label", edit_value)
+            text_input(&format!("Edit {}", node.label), edit_value)
                 .on_input(Message::EditLabel)
                 .on_submit(Message::FinishEdit)
                 .padding(2)
@@ -52,10 +52,11 @@ pub fn tree_view<'a>(
             .style(iced::widget::button::text)
             .padding(0);
         
+        const EDIT_BUTTON_LEFT_PADDING: f32 = 8.0;
         let edit_button = button(text("✏"))
             .on_press(Message::StartEdit(path.clone()))
             .style(iced::widget::button::text)
-            .padding(iced::Padding::new(0.0).left(8.0));
+            .padding(iced::Padding::new(0.0).left(EDIT_BUTTON_LEFT_PADDING));
         
         column![
             iced::widget::row![toggle_button, edit_button]

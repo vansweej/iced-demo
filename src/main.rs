@@ -53,20 +53,13 @@ impl TreeDemo {
     fn update(&mut self, message: Message) {
         match message {
             Message::Toggle(path) => {
-                let mut node = &mut self.root;
-                for i in path {
-                    if let Some(child) = node.children.get_mut(i) {
-                        node = child;
-                    } else {
-                        return;
-                    }
+                if let Some(node) = self.get_node_mut(&path) {
+                    node.open = !node.open;
                 }
-                node.open = !node.open;
             }
             Message::StartEdit(path) => {
                 // Find the node and start editing
-                let node = self.get_node(&path);
-                if let Some(node) = node {
+                if let Some(node) = self.get_node(&path) {
                     self.edit_value = node.label.clone();
                     self.editing_path = Some(path);
                 }
@@ -75,17 +68,11 @@ impl TreeDemo {
                 self.edit_value = value;
             }
             Message::FinishEdit => {
-                if let Some(path) = &self.editing_path {
-                    let mut node = &mut self.root;
-                    for i in path {
-                        if let Some(child) = node.children.get_mut(*i) {
-                            node = child;
-                        } else {
-                            self.editing_path = None;
-                            return;
-                        }
+                if let Some(path) = self.editing_path.clone() {
+                    let new_label = self.edit_value.clone();
+                    if let Some(node) = self.get_node_mut(&path) {
+                        node.label = new_label;
                     }
-                    node.label = self.edit_value.clone();
                 }
                 self.editing_path = None;
                 self.edit_value.clear();
@@ -97,6 +84,14 @@ impl TreeDemo {
         let mut node = &self.root;
         for i in path {
             node = node.children.get(*i)?;
+        }
+        Some(node)
+    }
+    
+    fn get_node_mut(&mut self, path: &[usize]) -> Option<&mut Node> {
+        let mut node = &mut self.root;
+        for i in path {
+            node = node.children.get_mut(*i)?;
         }
         Some(node)
     }
