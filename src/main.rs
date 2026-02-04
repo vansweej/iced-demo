@@ -15,6 +15,8 @@ pub enum Message {
     StartEdit(Vec<usize>),
     EditLabel(String),
     FinishEdit,
+    AddChild(Vec<usize>),
+    RemoveChild(Vec<usize>),
 }
 
 pub struct TreeDemo {
@@ -86,6 +88,27 @@ impl TreeDemo {
                 }
                 self.editing_path = None;
                 self.edit_value.clear();
+            }
+            Message::AddChild(path) => {
+                if let Some(node) = self.get_node_mut(&path) {
+                    let new_child = Node::new("New Node", false, vec![]);
+                    node.add_child(new_child);
+                    // Open the parent to show the new child
+                    node.open = true;
+                }
+            }
+            Message::RemoveChild(path) => {
+                // Path should have at least 2 elements: parent and child index
+                if path.len() < 2 {
+                    return;
+                }
+                
+                let parent_path = &path[..path.len() - 1];
+                let child_index = path[path.len() - 1];
+                
+                if let Some(parent) = self.get_node_mut(parent_path) {
+                    parent.remove_child(child_index);
+                }
             }
         }
     }
@@ -394,5 +417,204 @@ mod tests {
         let child = demo.get_node(&[1, 0]);
         assert!(child.is_some());
         assert_eq!(child.unwrap().label, "Branch 2.1");
+    }
+
+    #[test]
+    fn test_add_child_to_root() {
+        let mut demo = TreeDemo::new();
+        let path = vec![0]; // First root
+        
+        let initial_children = demo.get_node(&path).unwrap().children.len();
+        
+        demo.update(Message::AddChild(path.clone()));
+        
+        let node = demo.get_node(&path).unwrap();
+        assert_eq!(node.children.len(), initial_children + 1);
+        assert_eq!(node.children[initial_children].label, "New Node");
+        // Verify the parent was opened
+        assert!(node.open);
+    }
+
+    #[test]
+    fn test_add_child_to_branch() {
+        let mut demo = TreeDemo::new();
+        let path = vec![0, 0]; // First root's first child
+        
+        let initial_children = demo.get_node(&path).unwrap().children.len();
+        
+        demo.update(Message::AddChild(path.clone()));
+        
+        let node = demo.get_node(&path).unwrap();
+        assert_eq!(node.children.len(), initial_children + 1);
+        assert_eq!(node.children[initial_children].label, "New Node");
+        assert!(node.open);
+    }
+
+    #[test]
+    fn test_add_multiple_children() {
+        let mut demo = TreeDemo::new();
+        let path = vec![1, 0]; // Second root's first child
+        
+        let initial_children = demo.get_node(&path).unwrap().children.len();
+        
+        demo.update(Message::AddChild(path.clone()));
+        demo.update(Message::AddChild(path.clone()));
+        demo.update(Message::AddChild(path.clone()));
+        
+        let node = demo.get_node(&path).unwrap();
+        assert_eq!(node.children.len(), initial_children + 3);
+    }
+
+    #[test]
+    fn test_add_child_to_leaf() {
+        let mut demo = TreeDemo::new();
+        let path = vec![0, 0, 0]; // A leaf node
+        
+        // Verify it starts with no children
+        assert_eq!(demo.get_node(&path).unwrap().children.len(), 0);
+        
+        demo.update(Message::AddChild(path.clone()));
+        
+        let node = demo.get_node(&path).unwrap();
+        assert_eq!(node.children.len(), 1);
+        assert_eq!(node.children[0].label, "New Node");
+    }
+
+    #[test]
+    fn test_remove_child() {
+        let mut demo = TreeDemo::new();
+        // First root has 2 children initially
+        let parent_path = vec![0];
+        let initial_count = demo.get_node(&parent_path).unwrap().children.len();
+        
+        // Remove the first child
+        demo.update(Message::RemoveChild(vec![0, 0]));
+        
+        let node = demo.get_node(&parent_path).unwrap();
+        assert_eq!(node.children.len(), initial_count - 1);
+    }
+
+    #[test]
+    fn test_remove_child_from_branch() {
+        let mut demo = TreeDemo::new();
+        let path = vec![0, 0]; // First root's first child
+        let initial_count = demo.get_node(&path).unwrap().children.len();
+        
+        // Remove its first child
+        demo.update(Message::RemoveChild(vec![0, 0, 0]));
+        
+        let node = demo.get_node(&path).unwrap();
+        assert_eq!(node.children.len(), initial_count - 1);
+    }
+
+    #[test]
+    fn test_remove_nonexistent_child() {
+        let mut demo = TreeDemo::new();
+        let parent_path = vec![0];
+        let initial_count = demo.get_node(&parent_path).unwrap().children.len();
+        
+        // Try to remove a child with an invalid index
+        demo.update(Message::RemoveChild(vec![0, 99]));
+        
+        // Count should remain the same
+        let node = demo.get_node(&parent_path).unwrap();
+        assert_eq!(node.children.len(), initial_count);
+    }
+
+    #[test]
+    fn test_remove_child_with_short_path() {
+        let mut demo = TreeDemo::new();
+        let initial_roots = demo.roots.len();
+        
+        // Try to remove with a path that's too short (just root)
+        demo.update(Message::RemoveChild(vec![0]));
+        
+        // Should not remove root nodes
+        assert_eq!(demo.roots.len(), initial_roots);
+    }
+
+    #[test]
+    fn test_add_and_remove_child_sequence() {
+        let mut demo = TreeDemo::new();
+        let path = vec![1, 0];
+        
+        let initial_count = demo.get_node(&path).unwrap().children.len();
+        
+        // Add a child
+        demo.update(Message::AddChild(path.clone()));
+        assert_eq!(demo.get_node(&path).unwrap().children.len(), initial_count + 1);
+        
+        // Remove the newly added child
+        demo.update(Message::RemoveChild(vec![1, 0, initial_count]));
+        assert_eq!(demo.get_node(&path).unwrap().children.len(), initial_count);
+    }
+
+    #[test]
+    fn test_remove_all_children() {
+        let mut demo = TreeDemo::new();
+        let path = vec![0, 0]; // First root's first child (has 2 children initially)
+        
+        let child_count = demo.get_node(&path).unwrap().children.len();
+        
+        // Remove all children
+        for _ in 0..child_count {
+            demo.update(Message::RemoveChild(vec![0, 0, 0]));
+        }
+        
+        let node = demo.get_node(&path).unwrap();
+        assert_eq!(node.children.len(), 0);
+    }
+
+    #[test]
+    fn test_add_child_updates_tree_structure() {
+        let mut demo = TreeDemo::new();
+        let path = vec![0, 1]; // First root's second child
+        
+        let initial_count = demo.get_node(&path).unwrap().children.len();
+        
+        demo.update(Message::AddChild(path.clone()));
+        
+        // Verify we can access the new child (it's added at the end)
+        let new_child_path = vec![0, 1, initial_count];
+        let new_child = demo.get_node(&new_child_path);
+        assert!(new_child.is_some());
+        assert_eq!(new_child.unwrap().label, "New Node");
+    }
+
+    #[test]
+    fn test_add_child_to_closed_node_opens_it() {
+        let mut demo = TreeDemo::new();
+        let path = vec![0, 0]; // First root's first child
+        
+        // Close the node first
+        if demo.get_node(&path).unwrap().open {
+            demo.update(Message::Toggle(path.clone()));
+        }
+        assert!(!demo.get_node(&path).unwrap().open);
+        
+        // Add a child
+        demo.update(Message::AddChild(path.clone()));
+        
+        // Verify the node was opened
+        assert!(demo.get_node(&path).unwrap().open);
+    }
+
+    #[test]
+    fn test_edit_newly_added_child() {
+        let mut demo = TreeDemo::new();
+        let parent_path = vec![0, 0];
+        
+        // Add a new child
+        demo.update(Message::AddChild(parent_path.clone()));
+        
+        let child_count = demo.get_node(&parent_path).unwrap().children.len();
+        let new_child_path = vec![0, 0, child_count - 1];
+        
+        // Edit the new child
+        demo.update(Message::StartEdit(new_child_path.clone()));
+        demo.update(Message::EditLabel("Edited New Node".to_string()));
+        demo.update(Message::FinishEdit);
+        
+        assert_eq!(demo.get_node(&new_child_path).unwrap().label, "Edited New Node");
     }
 }
