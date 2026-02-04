@@ -90,6 +90,9 @@ impl TreeDemo {
         }
     }
     
+    /// Gets a reference to a node at the specified path.
+    /// The first element of the path is the root index, subsequent elements navigate through children.
+    /// Returns None if the path is empty or if any index is out of bounds.
     fn get_node(&self, path: &[usize]) -> Option<&Node> {
         if path.is_empty() {
             return None;
@@ -101,6 +104,9 @@ impl TreeDemo {
         Some(node)
     }
     
+    /// Gets a mutable reference to a node at the specified path.
+    /// The first element of the path is the root index, subsequent elements navigate through children.
+    /// Returns None if the path is empty or if any index is out of bounds.
     fn get_node_mut(&mut self, path: &[usize]) -> Option<&mut Node> {
         if path.is_empty() {
             return None;
