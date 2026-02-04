@@ -28,8 +28,16 @@
 
         libPath = with pkgs; lib.makeLibraryPath [
           libGL
+          libEGL
           libxkbcommon
           wayland
+          mesa
+          xorg.libX11
+          xorg.libXrandr
+          xorg.libXcursor
+          xorg.libXi
+          xorg.libXinerama
+          vulkan-loader
         ];
 
         iced-demo = rustPlatform.buildRustPackage {
@@ -42,7 +50,18 @@
           };
 
           nativeBuildInputs = [ pkgs.pkg-config ];
-          buildInputs = [ pkgs.libGL pkgs.libxkbcommon pkgs.wayland ];
+          buildInputs = with pkgs; [ 
+            libGL 
+            libEGL
+            libxkbcommon 
+            wayland 
+            mesa
+            xorg.libX11
+            xorg.libXrandr
+            xorg.libXcursor
+            xorg.libXi
+            vulkan-loader
+          ];
           
           PKG_CONFIG_PATH = "${pkgs.openssl.dev}/lib/pkgconfig";
         };
@@ -60,8 +79,16 @@
             pkg-config
             openssl
             libGL
+            libEGL
             libxkbcommon
             wayland
+            mesa
+            xorg.libX11
+            xorg.libXrandr
+            xorg.libXcursor
+            xorg.libXi
+            xorg.libXinerama
+            vulkan-loader
           ];
 
           RUST_LOG = "debug";
